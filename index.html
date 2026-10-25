@@ -104,6 +104,10 @@ header{position:fixed;inset:0 0 auto;z-index:50;background:rgba(248,243,239,.91)
 @media(max-width:650px){.hero-needs p{padding:.7rem .8rem;background:rgba(248,243,239,.9);border-radius:4px;color:var(--ink)}}
 @media(max-width:650px){#boites .box-object{width:min(78%,250px);height:360px;margin-inline:auto}}
 .hero-feather{display:none}
+.feather-burst{position:absolute;inset:0;z-index:30;overflow:visible;pointer-events:none;transform:translateZ(180px)}
+.feather-burst img{position:absolute;left:50%;top:18%;width:12%;min-width:18px;max-width:38px;height:auto;opacity:0;filter:drop-shadow(0 2px 4px rgba(46,32,53,.12));animation:feather-flight 3.4s cubic-bezier(.22,.61,.36,1) forwards}
+@keyframes feather-flight{0%{opacity:0;transform:translate(-50%,0) scale(.35) rotate(0)}14%{opacity:.74}100%{opacity:0;transform:translate(calc(-50% + var(--flight-x)),var(--flight-y)) scale(.82) rotate(var(--flight-rotation))}}
+@media(prefers-reduced-motion:reduce){.feather-burst{display:none}}
 .hero-copy .trust span{background:linear-gradient(rgba(125,91,150,.96),rgba(125,91,150,.96)),url("Assets/IMG_6217.jpeg") center/cover;color:#fff;border-color:rgba(74,49,102,.4)}
 .box{cursor:pointer;justify-content:flex-end;padding-bottom:0}
 .box:focus-visible{outline:3px solid var(--coral);outline-offset:5px}
@@ -212,4 +216,41 @@ document.querySelectorAll('.boxbtn').forEach(b=>b.onclick=()=>{const box=b.close
 document.getElementById('form').onsubmit=event=>{event.preventDefault();const form=event.currentTarget;const statusElement=document.querySelector('.status');if(!form.checkValidity()){form.reportValidity();statusElement.textContent='Merci de compléter les champs obligatoires.';return}const name=document.getElementById('name').value.trim();const email=document.getElementById('email').value.trim();const phone=document.getElementById('phone').value.trim();const message=document.getElementById('message').value.trim();const subject=encodeURIComponent('Demande de contact depuis le site');const body=encodeURIComponent(`Nom : ${name}\r\nAdresse électronique : ${email}\r\nTéléphone : ${phone||'Non renseigné'}\r\n\r\nMessage :\r\n${message}`);statusElement.textContent='Votre logiciel de messagerie va s’ouvrir pour envoyer votre demande.';window.location.href=`mailto:atcsp90@gmail.com?subject=${subject}&body=${body}`};
 </script><script>
 document.querySelectorAll('.box').forEach(box=>{const lid=box.querySelector('.lid'),content=box.querySelector('.box-content'),button=box.querySelector('.boxbtn'),message=content.firstElementChild.cloneNode(true),label=box.querySelector('.box-label').textContent.trim();message.classList.add('lid-message');message.setAttribute('aria-hidden','true');lid.append(message);box.setAttribute('role','button');box.setAttribute('tabindex','0');box.setAttribute('aria-label',label+'. '+message.textContent.trim());box.setAttribute('aria-expanded','false');button.remove();content.remove();const setOpen=open=>{box.classList.toggle('open',open);box.setAttribute('aria-expanded',open);message.setAttribute('aria-hidden',!open)};let pointerType='';box.addEventListener('pointerdown',event=>{pointerType=event.pointerType});box.addEventListener('pointerenter',event=>{if(event.pointerType==='mouse'||event.pointerType==='pen')setOpen(true)});box.addEventListener('pointerleave',event=>{if((event.pointerType==='mouse'||event.pointerType==='pen')&&!box.contains(document.activeElement))setOpen(false)});box.addEventListener('focusin',()=>{if(pointerType!=='touch')setOpen(true)});box.addEventListener('focusout',event=>{if(!box.contains(event.relatedTarget))setOpen(false)});box.addEventListener('click',event=>{if(pointerType==='touch')setOpen(!box.classList.contains('open'))});box.addEventListener('keydown',event=>{if(event.key==='Escape'){setOpen(false);box.blur()}else if(event.key==='Enter'||event.key===' '){event.preventDefault();setOpen(true)}})});
-</script><script>document.querySelectorAll('.box').forEach(box=>box.querySelector('.lid').append(box.querySelector('.lid-message')));document.querySelectorAll('.lid-message').forEach(message=>{const title=message.querySelector('h3'),flap=document.createElement('div');flap.className='lid-title-flap';flap.append(title);message.prepend(flap)});</script></body></html>
+</script><script>document.querySelectorAll('.box').forEach(box=>box.querySelector('.lid').append(box.querySelector('.lid-message')));document.querySelectorAll('.lid-message').forEach(message=>{const title=message.querySelector('h3'),flap=document.createElement('div');flap.className='lid-title-flap';flap.append(title);message.prepend(flap)});</script>
+<script>
+const burstFeathers=box=>{
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const burst=document.createElement('div');
+  const boxObject=box.querySelector('.box-object');
+  const boxSize=boxObject.getBoundingClientRect();
+  const flightPaths=[[-.36,-1.08],[-.24,-1.2],[-.12,-1.3],[.12,-1.3],[.24,-1.2],[.36,-1.08]];
+  burst.className='feather-burst';
+  burst.setAttribute('aria-hidden','true');
+  flightPaths.forEach(([horizontal,vertical],index)=>{
+    const feather=document.createElement('img');
+    feather.src='Assets/feather-cutout.png';
+    feather.alt='';
+    feather.style.setProperty('--flight-x',`${horizontal*boxSize.width}px`);
+    feather.style.setProperty('--flight-y',`${vertical*boxSize.height}px`);
+    feather.style.setProperty('--flight-rotation',`${(index%2?1:-1)*(16+index*6)}deg`);
+    feather.style.animationDelay=`${index*180}ms`;
+    burst.append(feather);
+  });
+  boxObject.append(burst);
+  window.setTimeout(()=>burst.remove(),4800);
+};
+const featuredBox=document.querySelector('.box.b3');
+const featuredMessage=featuredBox.querySelector('.lid-message');
+const burstAfterMessageAppears=event=>{
+  if(event.target!==featuredMessage||event.propertyName!=='opacity')return;
+  featuredMessage.removeEventListener('transitionend',burstAfterMessageAppears);
+  if(featuredBox.classList.contains('open'))burstFeathers(featuredBox);
+};
+let wasOpen=featuredBox.classList.contains('open');
+new MutationObserver(()=>{
+  const isOpen=featuredBox.classList.contains('open');
+  if(isOpen&&!wasOpen)featuredMessage.addEventListener('transitionend',burstAfterMessageAppears);
+  if(!isOpen&&wasOpen)featuredMessage.removeEventListener('transitionend',burstAfterMessageAppears);
+  wasOpen=isOpen;
+}).observe(featuredBox,{attributes:true,attributeFilter:['class']});
+</script></body></html>
